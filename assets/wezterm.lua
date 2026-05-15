@@ -66,6 +66,91 @@ local _f = io.open(cheatsheet_path, 'w')
 if _f then _f:write(cheatsheet); _f:close() end
 
 ----------------------------------------------------------------------
+-- Usage tracking (EWMA): 멀티키 바인딩 사용 빈도 학습 → 치트시트 상단에
+-- top 10 표시. 단일 키(F-keys 등 mods='NONE')는 instrument()가 자동 통과.
+-- JSON 영속화. decay=0.95/day → 반감기 약 13일, 무한 누적 방지.
+-- 추적 끄려면 아래 usage.instrument(config.keys) 한 줄만 제거하면 됨.
+----------------------------------------------------------------------
+local usage = {}
+do
+  local PATH = wezterm.config_dir .. '/.wezterm-usage.json'
+  local DECAY = 0.95
+  local DAY = 86400
+  local DESC, COUNTS = {}, nil
+
+  local function decay_count(count, last_used, now)
+    if not last_used then return count end
+    local days = (now - last_used) / DAY
+    if days <= 0 then return count end
+    return count * (DECAY ^ days)
+  end
+
+  local function load()
+    if COUNTS then return end
+    COUNTS = {}
+    local f = io.open(PATH, 'r')
+    if not f then return end
+    local s = f:read('*a'); f:close()
+    if not s or s == '' then return end
+    local ok, data = pcall(wezterm.json_parse, s)
+    if not (ok and type(data) == 'table') then return end
+    local now = os.time()
+    for id, v in pairs(data) do
+      if type(v) == 'number' then data[id] = { count = v, last_used = now } end
+    end
+    COUNTS = data
+  end
+
+  local function flush()
+    local f = io.open(PATH, 'w')
+    if f then f:write(wezterm.json_encode(COUNTS)); f:close() end
+  end
+
+  function usage.track(id, description, action)
+    DESC[id] = description
+    return wezterm.action_callback(function(window, pane)
+      load()
+      local now = os.time()
+      local e = COUNTS[id]
+      if e then
+        e.count = decay_count(e.count, e.last_used, now) + 1
+        e.last_used = now
+      else
+        COUNTS[id] = { count = 1, last_used = now }
+      end
+      flush()
+      window:perform_action(action, pane)
+    end)
+  end
+
+  function usage.read_top(n)
+    load()
+    local now = os.time()
+    local arr = {}
+    for id, e in pairs(COUNTS) do
+      table.insert(arr, {
+        id = id, description = DESC[id] or id,
+        count = decay_count(e.count, e.last_used, now),
+      })
+    end
+    table.sort(arr, function(a, b) return a.count > b.count end)
+    local out = {}
+    for i = 1, math.min(n, #arr) do out[i] = arr[i] end
+    return out
+  end
+
+  function usage.instrument(keys)
+    for _, k in ipairs(keys) do
+      if k.mods and k.mods ~= 'NONE' then
+        local id = (tostring(k.mods) .. '+' .. tostring(k.key)):lower()
+        k.action = usage.track(id, id, k.action)
+      end
+    end
+    return keys
+  end
+end
+
+----------------------------------------------------------------------
 -- Appearance
 ----------------------------------------------------------------------
 config.color_scheme = 'Catppuccin Mocha'
@@ -156,22 +241,42 @@ config.keys = {
   -- WezTerm은 QuitApplication을 기본 바인딩하지 않음. Ctrl+Shift+Q로 전체 종료.
   { key = 'q',      mods = 'CTRL|SHIFT', action = act.QuitApplication },
 
-  -- Ctrl+Shift+H: 새 탭에 위 cheatsheet 출력. Ctrl+H는 Backspace(0x08)라 회피.
+  -- Ctrl+Shift+H: top-10 사용 빈도 + 정적 cheatsheet를 합쳐 새 탭에 출력.
+  -- Ctrl+H = Backspace(0x08)라 회피. 추적 데이터는 .wezterm-usage.json.
   {
     key = 'h', mods = 'CTRL|SHIFT',
     action = wezterm.action_callback(function(window, pane)
+      local rendered_path = wezterm.config_dir .. '/.wezterm-cheatsheet-rendered.txt'
+      local top = usage.read_top(10)
+      local lines = { 'TOP 10 MOST USED (EWMA, half-life ~13 days):', '' }
+      if #top == 0 then
+        table.insert(lines, '  (no data yet — use a few multi-key shortcuts and reopen)')
+      else
+        for i, e in ipairs(top) do
+          table.insert(lines, string.format('  %2d. %-32s x%.1f', i, e.description, e.count))
+        end
+      end
+      table.insert(lines, '')
+      table.insert(lines, string.rep('=', 62))
+      table.insert(lines, '')
+      local f = io.open(rendered_path, 'w')
+      if f then f:write(table.concat(lines, '\n') .. '\n' .. cheatsheet); f:close() end
+
       local args
       if wezterm.target_triple:find('windows') then
         args = { 'pwsh', '-NoLogo', '-NoExit', '-NoProfile', '-Command',
-                 'Clear-Host; Get-Content "' .. cheatsheet_path .. '"' }
+                 'Clear-Host; Get-Content "' .. rendered_path .. '"' }
       else
         args = { 'sh', '-c',
-                 'clear; cat "' .. cheatsheet_path .. '"; printf "\\n"; exec ${SHELL:-bash}' }
+                 'clear; cat "' .. rendered_path .. '"; printf "\\n"; exec ${SHELL:-bash}' }
       end
       window:perform_action(act.SpawnCommandInNewTab { args = args }, pane)
     end),
   },
 }
+
+-- 멀티키 바인딩만 추적. mods='NONE' (F-keys 등 단일키)는 자동 통과.
+usage.instrument(config.keys)
 
 config.leader = { key = 'a', mods = 'CTRL', timeout_milliseconds = 1000 }
 
