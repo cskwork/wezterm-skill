@@ -12,6 +12,60 @@ local act = wezterm.action
 local config = wezterm.config_builder()
 
 ----------------------------------------------------------------------
+-- Cheat sheet: Ctrl+Shift+H은 이 텍스트를 새 탭에 출력. 내용은 아래에 있는
+-- 실제 바인딩과 동기 상태를 유지해야 함. 바인딩 추가/변경 시 함께 갱신.
+-- (Ctrl+H = ASCII Backspace라 사용 회피, Shift 조합으로 안전하게 둠.)
+----------------------------------------------------------------------
+local cheatsheet = [[
+==============================================================
+  WezTerm cheat sheet — generated from your wezterm.lua
+  Close this tab: Ctrl+Shift+W   |   Reopen: Ctrl+Shift+H
+==============================================================
+
+LEADER prefix: Ctrl+a   (timeout 1s)
+
+Copy / paste / search
+  Ctrl+Shift+C                Copy to clipboard + primary
+  Ctrl+Shift+V                Paste from clipboard
+  Ctrl+Insert                 Copy to primary selection
+  Shift+Insert                Paste from primary selection
+  Ctrl+Shift+F                Search current selection
+  Ctrl+Shift+P                Command palette
+  Ctrl+Shift+H                Show this cheat sheet
+  Ctrl+Shift+Q                Quit WezTerm
+
+Panes (tmux-style)
+  LEADER  \                   Split horizontal (side-by-side)
+  LEADER  -                   Split vertical (stacked)
+  LEADER  h / j / k / l       Move focus L / D / U / R
+  LEADER  z                   Toggle pane zoom
+  LEADER  x                   Close current pane
+
+Tabs
+  LEADER  c                   New tab (current pane domain)
+  LEADER  n / p               Next / previous tab
+  Ctrl+Shift+T                New tab (default — built-in)
+  Ctrl+Shift+W                Close current tab (built-in)
+  Ctrl+Shift+1..9             Activate tab N (built-in)
+
+Workspaces
+  LEADER  w                   Fuzzy workspace launcher
+
+Config
+  LEADER  r                   Reload config
+  Ctrl+Shift+R                Reload config (built-in)
+  Ctrl+Shift+L                Debug overlay (Lua errors)
+
+Mouse
+  Ctrl+click                  Open URL under cursor
+]]
+
+-- WezTerm Lua는 config 로드 시 io.open 사용 가능. config_dir 옆에 파일로 저장.
+local cheatsheet_path = wezterm.config_dir .. '/.wezterm-cheatsheet.txt'
+local _f = io.open(cheatsheet_path, 'w')
+if _f then _f:write(cheatsheet); _f:close() end
+
+----------------------------------------------------------------------
 -- Appearance
 ----------------------------------------------------------------------
 config.color_scheme = 'Catppuccin Mocha'
@@ -101,6 +155,22 @@ config.keys = {
   { key = 'p',      mods = 'CTRL|SHIFT', action = act.ActivateCommandPalette },
   -- WezTerm은 QuitApplication을 기본 바인딩하지 않음. Ctrl+Shift+Q로 전체 종료.
   { key = 'q',      mods = 'CTRL|SHIFT', action = act.QuitApplication },
+
+  -- Ctrl+Shift+H: 새 탭에 위 cheatsheet 출력. Ctrl+H는 Backspace(0x08)라 회피.
+  {
+    key = 'h', mods = 'CTRL|SHIFT',
+    action = wezterm.action_callback(function(window, pane)
+      local args
+      if wezterm.target_triple:find('windows') then
+        args = { 'pwsh', '-NoLogo', '-NoExit', '-NoProfile', '-Command',
+                 'Clear-Host; Get-Content "' .. cheatsheet_path .. '"' }
+      else
+        args = { 'sh', '-c',
+                 'clear; cat "' .. cheatsheet_path .. '"; printf "\\n"; exec ${SHELL:-bash}' }
+      end
+      window:perform_action(act.SpawnCommandInNewTab { args = args }, pane)
+    end),
+  },
 }
 
 config.leader = { key = 'a', mods = 'CTRL', timeout_milliseconds = 1000 }
