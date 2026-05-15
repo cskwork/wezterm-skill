@@ -47,6 +47,8 @@ config.show_new_tab_button_in_tab_bar = false
 ----------------------------------------------------------------------
 config.scrollback_lines = 10000
 config.enable_scroll_bar = true
+-- 스크롤바 thumb이 기본은 탭바 배경색이라 잘 안 보임. 최소 크기 + 명시 색으로 항상 또렷하게.
+config.min_scroll_bar_height = '2cell'
 config.audible_bell = 'Disabled'
 config.exit_behavior = 'CloseOnCleanExit'
 config.warn_about_missing_glyphs = false
