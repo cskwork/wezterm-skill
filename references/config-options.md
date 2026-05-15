@@ -109,6 +109,91 @@ config.scrollback_lines = 10000
 return config
 ```
 
+## Polish & performance
+
+Small recipes that show up in most well-tuned community configs.
+
+### Inactive pane dimming
+
+Dim non-focused panes so the active one pops visually.
+
+```lua
+config.inactive_pane_hsb = {
+  saturation = 0.8,
+  brightness = 0.7,
+}
+```
+
+### GPU front-end
+
+`WebGpu` is the modern path; falls back to `OpenGL` if the driver disagrees. Worth trying on any system newer than ~2018.
+
+```lua
+config.front_end = 'WebGpu'
+config.webgpu_power_preference = 'HighPerformance'
+config.max_fps = 120     -- match your monitor; or 240 on a 240Hz display
+```
+
+If text flickers or you see GPU init errors in the debug overlay, fall back to `'OpenGL'`.
+
+### Zen mode (distraction-free toggle)
+
+Hides the tab bar and removes padding via overrides. Bound to `LEADER Z` in this recipe.
+
+```lua
+local zen = false
+config.keys = config.keys or {}
+table.insert(config.keys, {
+  key = 'Z', mods = 'LEADER|SHIFT',
+  action = wezterm.action_callback(function(window)
+    zen = not zen
+    local overrides = window:get_config_overrides() or {}
+    if zen then
+      overrides.enable_tab_bar  = false
+      overrides.window_padding  = { left = 0, right = 0, top = 0, bottom = 0 }
+    else
+      overrides.enable_tab_bar  = true
+      overrides.window_padding  = nil
+    end
+    window:set_config_overrides(overrides)
+  end),
+})
+```
+
+### OS-aware config pattern
+
+Use `wezterm.target_triple` to branch cleanly:
+
+```lua
+local is_windows = wezterm.target_triple:find 'windows' ~= nil
+local is_mac     = wezterm.target_triple:find 'darwin'  ~= nil
+local is_linux   = wezterm.target_triple:find 'linux'   ~= nil
+
+if is_windows then
+  config.default_prog = { 'pwsh.exe', '-NoLogo' }
+elseif is_mac then
+  config.macos_window_background_blur = 20
+  config.window_decorations = 'RESIZE|MACOS_FORCE_DISABLE_SHADOW'
+elseif is_linux then
+  config.enable_wayland = true
+end
+
+-- Per-OS copy modifier
+local copy_mods = is_mac and 'CMD' or 'CTRL|SHIFT'
+table.insert(config.keys, {
+  key = 'C', mods = copy_mods, action = wezterm.action.CopyTo 'Clipboard',
+})
+```
+
+### Smooth scroll & cursor
+
+```lua
+config.animation_fps           = 60
+config.cursor_blink_ease_in    = 'Constant'
+config.cursor_blink_ease_out   = 'Constant'
+config.cursor_blink_rate       = 500
+```
+
 ## Inspecting your effective config
 
 ```bash

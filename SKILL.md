@@ -128,6 +128,63 @@ printf 'tail -f app.log\n' | wezterm cli send-text --pane-id "$PANE"
 
 Never `wezterm cli split-pane -- <cmd>` — that bypasses the shell. Full guide and layout recipes: `references/pane-splitting.md`.
 
+### Switch to a modular config
+
+Once `wezterm.lua` passes ~150 lines, split it. Each module exports `M.apply(config)` and the entry file is a manifest:
+
+```lua
+-- ~/.config/wezterm/wezterm.lua
+local wezterm = require 'wezterm'
+local config  = wezterm.config_builder()
+package.path = package.path .. ';' .. wezterm.config_dir .. '/lua/?.lua'
+
+require('appearance').apply(config)
+require('keys'      ).apply(config)
+require('events'    ).apply(config)
+
+return config
+```
+
+Full pattern (helpers/theme/keys/workspaces/events/plugins) and migration steps: `references/modular-config.md`.
+
+### Add a plugin
+
+```lua
+local resurrect = wezterm.plugin.require 'https://github.com/MLFlexer/resurrect.wezterm'
+resurrect.apply_to_config(config)
+```
+
+Pin with `/tree/v1.0.0` suffix. Update via `wezterm.plugin.update_all()` or `wezterm cli plugin update`. Curated list and security notes: `references/plugins.md`.
+
+### Enable IDE autocomplete
+
+Install `lua-language-server`, clone `DrKJeff16/wezterm-types`, drop a `.luarc.json` next to your config:
+
+```json
+{
+  "workspace": { "library": ["~/wezterm-types"] },
+  "diagnostics": { "globals": ["wezterm"] }
+}
+```
+
+Now `config.colo<Tab>` autocompletes, hover shows docs, action payloads are type-checked. Full setup: `references/types.md`.
+
+### Workspaces
+
+Named tab/pane collections per project. Switch via launcher, persist via unix multiplexer:
+
+```lua
+-- LEADER w opens fuzzy workspace launcher; existing names complete, new names create
+{ key = 'w', mods = 'LEADER',
+  action = wezterm.action.ShowLauncherArgs { flags = 'FUZZY|WORKSPACES' } }
+
+-- Persist sessions across GUI restarts
+config.unix_domains = { { name = 'main' } }
+config.default_gui_startup_args = { 'connect', 'main' }
+```
+
+Full workspace API, auto-bootstrap on launch, status bar display: `references/workspaces.md`.
+
 ### Shell integration (CWD inheritance on split)
 
 By default a new pane starts in `default_cwd`, not the parent pane's directory. To make splits inherit CWD, the shell must emit OSC 7. Sourcing WezTerm's bundled scripts is the fast path:
@@ -183,6 +240,10 @@ Full pattern, examples, and limits: `references/agent-driving.md`.
 - `references/agent-driving.md` — driving a WezTerm pane from an AI agent (send-text / get-text loop)
 - `references/ssh.md` — `wezterm ssh` vs persistent `ssh_domains`, OpenSSH config interop, troubleshooting
 - `references/shell-integration.md` — OSC 7 setup so split panes inherit CWD (bash/zsh/fish + PowerShell)
+- `references/modular-config.md` — split wezterm.lua into helpers/theme/keys/events modules with `M.apply(config)` pattern
+- `references/types.md` — `lua-language-server` + community type stubs for IDE autocomplete and inline docs
+- `references/plugins.md` — `wezterm.plugin.require` mechanism + curated plugin list (resurrect, smart-splits, bar.wezterm, ...)
+- `references/workspaces.md` — named workspaces, switching, persistence via unix mux + resurrect, status bar display
 
 ## Anti-patterns
 

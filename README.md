@@ -29,6 +29,10 @@ wezterm-skill/
     agent-driving.md             — drive a pane from an AI agent (send-text / get-text)
     ssh.md                       — `wezterm ssh` and persistent ssh_domains
     shell-integration.md         — OSC 7 setup for CWD inheritance on split
+    modular-config.md            — split wezterm.lua into helpers/theme/keys modules
+    types.md                     — lua-language-server + wezterm-types for IDE autocomplete
+    plugins.md                   — wezterm.plugin.require + curated community plugin list
+    workspaces.md                — named workspaces, switching, persistence, status bar
   scripts/
     bsp-split.sh                 — binary-space-partition pane split helper
     add-ssh-host.sh              — scaffold a new SSH host (bash, key + ~/.ssh/config + ssh_domains)
