@@ -1,0 +1,23 @@
+# Default: auto-normalize text to LF in the repo, native EOL in working copy.
+* text=auto
+
+# Force LF for files that must run on POSIX (shell scripts and Lua configs
+# that may be sourced from WSL/Linux/macOS).
+*.sh        text eol=lf
+*.lua       text eol=lf
+*.md        text eol=lf
+*.json      text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.gitattributes text eol=lf
+*.gitignore text eol=lf
+
+# PowerShell scripts: keep CRLF since they target Windows-native pwsh.
+*.ps1       text eol=crlf
+*.psm1      text eol=crlf
+
+# Binary types so git does not mangle them.
+*.png       binary
+*.jpg       binary
+*.gif       binary
+*.ico       binary

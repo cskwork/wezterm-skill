@@ -128,6 +128,22 @@ printf 'tail -f app.log\n' | wezterm cli send-text --pane-id "$PANE"
 
 Never `wezterm cli split-pane -- <cmd>` — that bypasses the shell. Full guide and layout recipes: `references/pane-splitting.md`.
 
+### Shell integration (CWD inheritance on split)
+
+By default a new pane starts in `default_cwd`, not the parent pane's directory. To make splits inherit CWD, the shell must emit OSC 7. Sourcing WezTerm's bundled scripts is the fast path:
+
+```bash
+# bash / zsh — Linux
+[[ -n "$WEZTERM_PANE" ]] && source /usr/share/wezterm/wezterm.sh
+
+# bash — Windows (Git Bash)
+[[ -n "$WEZTERM_PANE" ]] && source "/c/Program Files/WezTerm/wezterm.sh"
+```
+
+PowerShell has no bundled script; use the manual emitter in `references/shell-integration.md` (works with Starship etc.).
+
+Verify with `wezterm cli list --format json | jq '.[].cwd'` — should show real paths, not just `file:///home/<user>`.
+
 ### Hide tab bar when only one tab
 ```lua
 config.hide_tab_bar_if_only_one_tab = true
@@ -166,6 +182,7 @@ Full pattern, examples, and limits: `references/agent-driving.md`.
 - `references/color-schemes.md` — popular built-in themes with exact names
 - `references/agent-driving.md` — driving a WezTerm pane from an AI agent (send-text / get-text loop)
 - `references/ssh.md` — `wezterm ssh` vs persistent `ssh_domains`, OpenSSH config interop, troubleshooting
+- `references/shell-integration.md` — OSC 7 setup so split panes inherit CWD (bash/zsh/fish + PowerShell)
 
 ## Anti-patterns
 
