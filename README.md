@@ -1,15 +1,31 @@
 # wezterm-skill
 
-A Claude Code skill for configuring and driving the [WezTerm](https://wezterm.org) terminal emulator.
+A Claude Code skill for configuring and driving the [WezTerm](https://wezterm.org) terminal emulator. Bash + PowerShell helpers and an opinionated default config ship in the box.
 
 Install once, then ask Claude things like:
 
 - "set up wezterm with Catppuccin Mocha and tmux-style splits"
-- "add a leader-key binding that opens a Claude Code pane below"
-- "what does `wezterm cli send-text` do and how do I preserve PATH?"
+- "split my wezterm.lua into modules and add a workspace switcher binding"
+- "scaffold a new SSH host called `prod` and add it as an ssh_domain"
+- "drive the pane on the right with `wezterm cli send-text` to run my tests"
 - "switch my color scheme to Tokyo Night Storm and bump font size to 13"
+- "install `resurrect.wezterm` and wire up auto-save every 5 minutes"
+- "fix CWD inheritance — new panes start in `~` instead of my project"
 
-The skill knows the WezTerm CLI surface, the most useful config options, default keybindings, popular color schemes, and includes a ready-to-paste `wezterm.lua` you can drop into your config directory.
+## What it covers
+
+- Default `wezterm.lua` (Catppuccin Mocha, tmux-style leader, copy/paste, pane splits) plus minimal and Claude-Code-multi-pane variants
+- WezTerm CLI surface: `list`, `spawn`, `split-pane`, `send-text`, `get-text`, `connect`, `ssh`
+- Default + custom keybindings, leader-key patterns, key_tables (resize/copy mode)
+- Pane splitting recipes, BSP layout helper
+- Driving a pane from an AI agent (`send-text` / `get-text` loop)
+- SSH: `wezterm ssh` vs persistent `ssh_domains`, helper scripts for both bash and PowerShell
+- Shell integration (OSC 7) for CWD inheritance on split, bash/zsh/fish/PowerShell
+- Modular `wezterm.lua` layout (`M.apply(config)` pattern, `helpers`/`theme`/`keys`/`events`)
+- IDE type completion via `lua-language-server` + community type stubs
+- Plugin system (`wezterm.plugin.require`) + curated community plugin list
+- Named workspaces, switching, persistence via unix multiplexer or `resurrect.wezterm`
+- Polish: inactive-pane dimming, `WebGpu` front-end, Zen mode toggle, OS-aware config
 
 ## What's inside
 
@@ -82,13 +98,33 @@ The default config sets:
 
 ## Multi-pane Claude Code workflow
 
-The `assets/wezterm-claude.lua` config plus `scripts/bsp-split.sh` give you a tmux-free way to run several Claude Code sessions side by side.
+The `assets/wezterm-claude.lua` config plus the BSP split helper give you a tmux-free way to run several Claude Code sessions side by side.
 
 ```bash
+# Linux / macOS / Git Bash
 install -m 755 scripts/bsp-split.sh /tmp/bsp-split.sh
+
+# Windows-native (no Git Bash needed)
+Copy-Item scripts\Split-Bsp.ps1 "$env:USERPROFILE\bin\Split-Bsp.ps1"
 ```
 
-Then `LEADER s` (Ctrl+a, s) splits the current pane along its shorter axis and starts `claude` in the new pane. PATH and aliases are preserved because the command goes through your shell rather than the `wezterm cli split-pane -- claude` shortcut (which bypasses the shell — do not use it).
+Then `LEADER s` (Ctrl+a, s) splits the current pane along its shorter axis and starts `claude` in the new pane. PATH and aliases are preserved because the command goes through your shell rather than `wezterm cli split-pane -- claude` (which bypasses the shell — do not use it).
+
+## SSH helpers
+
+Scaffold a new SSH host (keypair, `~/.ssh/config` block, optional `ssh-copy-id`, optional WezTerm `ssh_domains` snippet):
+
+```bash
+# Linux / macOS / Git Bash
+./scripts/add-ssh-host.sh --alias prod --hostname 10.0.0.42 --user deploy \
+                          --copy-id --wezterm-domain
+
+# Windows-native PowerShell
+./scripts/Add-SshHost.ps1 -Alias prod -HostAddress 10.0.0.42 -User deploy `
+                          -CopyId -WezTermDomain
+```
+
+Both scripts are idempotent — re-running with the same alias is a no-op unless `--force` / `-Force` is passed.
 
 ## License
 
