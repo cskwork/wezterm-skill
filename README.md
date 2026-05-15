@@ -25,6 +25,7 @@ wezterm-skill/
     keybindings.md               — default + custom binding patterns
     config-options.md            — config option catalog
     color-schemes.md             — popular themes with exact names
+    agent-driving.md             — drive a pane from an AI agent (send-text / get-text)
   scripts/
     bsp-split.sh                 — binary-space-partition pane split helper
 ```

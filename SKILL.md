@@ -106,12 +106,31 @@ config.window_background_opacity = 0.92
 config.macos_window_background_blur = 20  -- macOS only
 ```
 
+## Driving a pane from an AI agent
+
+WezTerm exposes `send-text` (type input into a pane) and `get-text` (read pane output) over its CLI. This makes it possible for an AI coding agent to operate the terminal itself.
+
+The canonical loop:
+
+1. **Send** with `wezterm cli send-text 'cmd'` (no trailing newline — user reviews before pressing Enter)
+2. **Wait** for the user to press Enter
+3. **Read** with `wezterm cli get-text --start-line -30`
+
+Defaults an agent should follow:
+- Operate the **focused pane** by default (omit `--pane-id`); use `--pane-id N` only when the user says "send to pane N" or "use the build terminal"
+- **Type, do not execute** — append `\n` only when the user explicitly says "just run it"
+- Always follow `send-text` with `get-text --start-line -N` to confirm the result
+- Discover layout with `wezterm cli list --format json | jq '.[] | {pane_id, title, cwd}'`
+
+Full pattern, examples, and limits: `references/agent-driving.md`.
+
 ## References (load on demand)
 
 - `references/cli.md` — full `wezterm cli` subcommand reference
 - `references/keybindings.md` — default keybindings + custom binding patterns
 - `references/config-options.md` — config option catalog by category
 - `references/color-schemes.md` — popular built-in themes with exact names
+- `references/agent-driving.md` — driving a WezTerm pane from an AI agent (send-text / get-text loop)
 
 ## Anti-patterns
 
