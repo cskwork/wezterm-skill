@@ -44,8 +44,34 @@ WEZTERM_TEST_DIR=/tmp/wzt wezterm --config-file /tmp/wrap.lua ls-fonts --text x
 ## 설치 전 체크리스트
 
 1. **기존 설정 백업**: 모든 `install.ps1` / `install.sh`은 `~/.wezterm.lua`와 `~/.config/wezterm/`을 타임스탬프 폴더로 옮긴 뒤 새 설정을 배치합니다.
-2. **Nerd Font 준비**: 대부분의 템플릿이 JetBrainsMono Nerd Font / MesloLGM Nerd Font / Fira Code Nerd Font 중 하나를 가정합니다. `references/color-schemes.md`와 각 README의 *Required Fonts* 항목을 확인하세요.
+2. **Nerd Font 자동 설치**: `install.*` 은 기본적으로 해당 템플릿이 요구하는 Nerd Font를 per-user 폰트 디렉터리에 자동 설치합니다. 별도 admin 권한이 필요 없으며, 이미 폰트가 있으면 건너뜁니다. 자동 설치를 끄려면 `--no-fonts` (bash) 또는 `-NoFonts` (PowerShell) 플래그를 사용하세요.
+   - 01 / 02 → JetBrainsMono Nerd Font (02는 v3.2.1 핀)
+   - 04 → FiraCode Nerd Font + (수동) Monaspace Radon/Krypton
+   - 03 / 05 → 폰트 의존성 없음 또는 빌트인 fallback 사용
 3. **WezTerm 버전**: 일부 템플릿은 `nightly`를 요구합니다. 안전한 최소 버전은 `20240127-113634-bbcac864`이지만, `sravioli`는 nightly에서만 모든 기능이 동작합니다.
+
+## Standalone Nerd Font 설치 스크립트
+
+각 템플릿의 install 스크립트와 별개로, 임의의 Nerd Font를 per-user에 설치하고 싶다면 skill의 공통 스크립트를 직접 호출하세요.
+
+```powershell
+# Windows: FiraCode 최신, JetBrainsMono v3.2.1 핀
+..\..\scripts\Install-NerdFont.ps1 -FontName FiraCode
+..\..\scripts\Install-NerdFont.ps1 -FontName JetBrainsMono -Version v3.2.1
+```
+
+```bash
+# Linux / macOS / Git Bash
+bash ../../scripts/install-nerd-font.sh FiraCode
+bash ../../scripts/install-nerd-font.sh JetBrainsMono v3.2.1
+```
+
+설치 경로:
+- Windows: `%LOCALAPPDATA%\Microsoft\Windows\Fonts` (HKCU 레지스트리에도 등록)
+- macOS: `~/Library/Fonts`
+- Linux: `~/.local/share/fonts` (`fc-cache -f` 자동 실행)
+
+폰트가 등록되지 않은 OS(예: Git Bash에서 `reg.exe` 미사용)에서는 WezTerm 설정에 `config.font_dirs = { '<위 경로>' }` 한 줄을 추가하면 됩니다.
 
 ## 라이선스 주의 사항
 

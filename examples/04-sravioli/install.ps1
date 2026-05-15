@@ -1,10 +1,14 @@
 # Install sravioli/wezterm to ~/.config/wezterm
 # License: GPL-2.0 — preserves upstream LICENSE and LICENSE-DOCS files
+param(
+    [switch]$NoFonts
+)
 $ErrorActionPreference = 'Stop'
 
 $Repo  = 'https://github.com/sravioli/wezterm.git'
 $Dest  = Join-Path $HOME '.config\wezterm'
 $Stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$FontInstaller = Join-Path $PSScriptRoot '..\..\scripts\Install-NerdFont.ps1'
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     throw "git not found in PATH. Install Git for Windows first."
@@ -25,6 +29,19 @@ if (Test-Path $Dest) {
 New-Item -ItemType Directory -Force -Path (Split-Path $Dest -Parent) | Out-Null
 Write-Host "Cloning $Repo -> $Dest"
 git clone --depth 1 $Repo $Dest
+
+if (-not $NoFonts) {
+    if (Test-Path $FontInstaller) {
+        Write-Host ""
+        Write-Host "Installing FiraCode Nerd Font (per-user, no admin)..."
+        & $FontInstaller -FontName 'FiraCode'
+    } else {
+        Write-Warning "Font installer not found — install FiraCode Nerd Font manually from https://www.nerdfonts.com"
+    }
+    Write-Host ""
+    Write-Host "Note: Monaspace Radon and Monaspace Krypton are NOT Nerd Fonts and must be"
+    Write-Host "      installed separately from https://github.com/githubnext/monaspace/releases"
+}
 
 Write-Host ""
 Write-Host "Installed sravioli/wezterm (GPL-2.0, 155 stars)."

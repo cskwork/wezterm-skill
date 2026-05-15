@@ -1,11 +1,22 @@
 #!/usr/bin/env bash
 # Install sravioli/wezterm to ~/.config/wezterm
 # License: GPL-2.0 — preserves upstream LICENSE and LICENSE-DOCS files
+# Usage: ./install.sh [--no-fonts]
 set -euo pipefail
+
+NO_FONTS=0
+for arg in "$@"; do
+    case "$arg" in
+        --no-fonts) NO_FONTS=1 ;;
+        *) echo "Unknown arg: $arg" >&2; exit 2 ;;
+    esac
+done
 
 REPO='https://github.com/sravioli/wezterm.git'
 DEST="${HOME}/.config/wezterm"
 STAMP="$(date +%Y%m%d-%H%M%S)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FONT_INSTALLER="${SCRIPT_DIR}/../../scripts/install-nerd-font.sh"
 
 command -v git >/dev/null || { echo "git not found in PATH"; exit 1; }
 
@@ -22,6 +33,19 @@ fi
 mkdir -p "$(dirname "$DEST")"
 echo "Cloning $REPO -> $DEST"
 git clone --depth 1 "$REPO" "$DEST"
+
+if (( NO_FONTS == 0 )); then
+    if [[ -f "$FONT_INSTALLER" ]]; then
+        echo ""
+        echo "Installing FiraCode Nerd Font (per-user, no sudo)..."
+        bash "$FONT_INSTALLER" FiraCode
+    else
+        echo "Font installer not found — install FiraCode Nerd Font manually" >&2
+    fi
+    echo ""
+    echo "Note: Monaspace Radon and Monaspace Krypton are NOT Nerd Fonts and must be"
+    echo "      installed separately from https://github.com/githubnext/monaspace/releases"
+fi
 
 cat <<EOF
 
