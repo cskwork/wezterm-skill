@@ -97,6 +97,8 @@ config.keys = {
   { key = 'r',      mods = 'LEADER',     action = act.ReloadConfiguration },
   { key = 'f',      mods = 'CTRL|SHIFT', action = act.Search 'CurrentSelectionOrEmptyString' },
   { key = 'p',      mods = 'CTRL|SHIFT', action = act.ActivateCommandPalette },
+  -- WezTerm은 QuitApplication을 기본 바인딩하지 않음. Ctrl+Shift+Q로 전체 종료.
+  { key = 'q',      mods = 'CTRL|SHIFT', action = act.QuitApplication },
 }
 
 config.leader = { key = 'a', mods = 'CTRL', timeout_milliseconds = 1000 }
