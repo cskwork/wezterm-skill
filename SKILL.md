@@ -1,0 +1,121 @@
+---
+name: wezterm
+description: Configure, customize, and operate the WezTerm terminal emulator. Use when the user wants to set up a WezTerm config (fonts, themes, keybindings, copy-paste, panes, tabs), troubleshoot config errors, drive WezTerm via its CLI (split-pane, send-text, spawn, list), or wire up multi-pane workflows (Claude Code, tmux-style sessions, SSH/multiplexing domains). Also triggers on "WezTerm 설정", "터미널 색상", "wezterm.lua".
+---
+
+# WezTerm Skill
+
+You are an expert assistant for the WezTerm terminal emulator. WezTerm is configured in Lua and exposes a powerful CLI for driving panes, tabs, and remote multiplexers.
+
+## When to use this skill
+
+Triggers:
+- User wants to create, edit, or debug a `wezterm.lua` config
+- User asks about copy/paste, fonts, color schemes, keybindings, tab bar, opacity, padding
+- User wants to drive WezTerm from a script: `wezterm cli split-pane`, `send-text`, `spawn`, `list`
+- User wants a multi-pane workflow (e.g. several Claude Code sessions, BSP layout, dev server + logs)
+- User mentions SSH domains, unix multiplexer, `wezterm connect`, persistent sessions
+
+## Operating procedure
+
+1. **Detect the config path** before editing:
+   - Linux/macOS: `~/.wezterm.lua` or `~/.config/wezterm/wezterm.lua`
+   - Windows: `%USERPROFILE%\.wezterm.lua` or `%USERPROFILE%\.config\wezterm\wezterm.lua`
+   - If none exists and the user wants a starter, copy `assets/wezterm.lua` from this skill.
+
+2. **Always use `wezterm.config_builder()`** in new configs — it gives clearer error messages than a bare table.
+
+3. **Preserve existing config**. Read the file first, then make surgical edits. Do not rewrite the whole file unless the user asks.
+
+4. **Verify against current docs**. WezTerm's API changes; if you are unsure about a key name, fetch the current page from `https://wezterm.org` rather than guessing. Common doc paths:
+   - `https://wezterm.org/config/lua/config/index.html` — config options
+   - `https://wezterm.org/config/lua/keyassignment/<Name>.html` — key action reference
+   - `https://wezterm.org/colorschemes/index.html` — full theme list
+   - `https://wezterm.org/cli/general.html` — CLI subcommands
+
+5. **Reload after editing**. WezTerm watches the config file and reloads automatically; user can force reload with `Ctrl+Shift+R` (or `Super+R` on macOS). If the config has an error, WezTerm shows it in the debug overlay (`Ctrl+Shift+L`).
+
+## Default starter config
+
+If the user wants a sensible default (covers copy-paste, fonts, theme, panes, tabs, opacity), copy `assets/wezterm.lua` from this skill to the user's config location. Confirm overwrite before replacing an existing file.
+
+For a tiny minimal config, use `assets/wezterm-minimal.lua`.
+
+For a Claude-Code-multi-pane workflow, use `assets/wezterm-claude.lua` and the helper at `scripts/bsp-split.sh`.
+
+## CLI patterns (most useful)
+
+```bash
+# Inspect state
+wezterm cli list --format json
+wezterm cli list-clients
+
+# Spawn / split panes (preserves PATH because it goes through your shell)
+PANE_ID=$(wezterm cli split-pane --right)
+printf 'claude\n' | wezterm cli send-text --pane-id "$PANE_ID"
+
+# Do NOT do this — bypasses shell, loses PATH:
+# wezterm cli split-pane -- claude    (DON'T)
+
+# Activate, kill, zoom
+wezterm cli activate-pane --pane-id "$PANE_ID"
+wezterm cli zoom-pane --pane-id "$PANE_ID"
+wezterm cli kill-pane --pane-id "$PANE_ID"
+
+# Show current keybindings as Lua
+wezterm show-keys --lua
+
+# List installed fonts
+wezterm ls-fonts --list-system
+```
+
+See `references/cli.md` for the full subcommand list.
+
+## Common tasks
+
+### Change theme
+Edit `config.color_scheme = 'Catppuccin Mocha'`. See `references/color-schemes.md` for the curated list of popular names.
+
+### Set up copy-paste explicitly
+WezTerm already has sane defaults (`Ctrl+Shift+C` / `Ctrl+Shift+V` on Linux/Windows, `Cmd+C` / `Cmd+V` on macOS). To customize:
+
+```lua
+config.keys = {
+  { key = 'C', mods = 'CTRL|SHIFT', action = wezterm.action.CopyTo 'ClipboardAndPrimarySelection' },
+  { key = 'V', mods = 'CTRL|SHIFT', action = wezterm.action.PasteFrom 'Clipboard' },
+}
+```
+
+### Add a leader key (tmux-style)
+```lua
+config.leader = { key = 'a', mods = 'CTRL', timeout_milliseconds = 1000 }
+config.keys = {
+  { key = '|', mods = 'LEADER|SHIFT', action = wezterm.action.SplitHorizontal { domain = 'CurrentPaneDomain' } },
+  { key = '-', mods = 'LEADER',       action = wezterm.action.SplitVertical   { domain = 'CurrentPaneDomain' } },
+}
+```
+
+### Hide tab bar when only one tab
+```lua
+config.hide_tab_bar_if_only_one_tab = true
+```
+
+### Transparent window
+```lua
+config.window_background_opacity = 0.92
+config.macos_window_background_blur = 20  -- macOS only
+```
+
+## References (load on demand)
+
+- `references/cli.md` — full `wezterm cli` subcommand reference
+- `references/keybindings.md` — default keybindings + custom binding patterns
+- `references/config-options.md` — config option catalog by category
+- `references/color-schemes.md` — popular built-in themes with exact names
+
+## Anti-patterns
+
+- Never use `wezterm cli split-pane -- <command>` — it bypasses the shell and loses PATH/aliases. Use `split-pane` to create the pane, then pipe with `send-text`.
+- Do not put `wezterm.config_builder()` and a bare config table in the same file — pick one (the builder is preferred).
+- Avoid `wezterm.on('format-tab-title', ...)` overrides until the basic config works; tab-title formatters silently fail and are hard to debug.
+- Do not run `wezterm cli` from a shell that is not a WezTerm pane — set `WEZTERM_UNIX_SOCKET` or use `--mux-server-unix-domain-socket-path` if you must.
