@@ -46,7 +46,7 @@ config.show_new_tab_button_in_tab_bar = false
 -- Behavior
 ----------------------------------------------------------------------
 config.scrollback_lines = 10000
-config.enable_scroll_bar = false
+config.enable_scroll_bar = true
 config.audible_bell = 'Disabled'
 config.exit_behavior = 'CloseOnCleanExit'
 config.warn_about_missing_glyphs = false
