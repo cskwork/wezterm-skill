@@ -26,8 +26,10 @@ wezterm-skill/
     config-options.md            — config option catalog
     color-schemes.md             — popular themes with exact names
     agent-driving.md             — drive a pane from an AI agent (send-text / get-text)
+    ssh.md                       — `wezterm ssh` and persistent ssh_domains
   scripts/
     bsp-split.sh                 — binary-space-partition pane split helper
+    add-ssh-host.sh              — scaffold a new SSH host (key + ~/.ssh/config + ssh_domains)
 ```
 
 ## Install

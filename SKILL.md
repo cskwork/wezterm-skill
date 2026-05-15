@@ -71,6 +71,22 @@ wezterm ls-fonts --list-system
 
 See `references/cli.md` for the full subcommand list.
 
+## SSH setup
+
+For a one-off connection use `wezterm ssh user@host`. For a daily-driver host, declare an `ssh_domain` so panes/tabs survive disconnects. The skill ships `scripts/add-ssh-host.sh` which:
+
+1. Generates a per-host Ed25519 keypair (idempotent)
+2. Appends a `Host` block to `~/.ssh/config`
+3. Optionally runs `ssh-copy-id`
+4. Optionally prints a paste-ready `ssh_domains` snippet for `wezterm.lua`
+
+```bash
+./scripts/add-ssh-host.sh --alias prod --hostname 10.0.0.42 \
+                          --user deploy --copy-id --wezterm-domain
+```
+
+Full SSH guide (key fields, `wezterm ssh` vs `ssh_domains`, troubleshooting): `references/ssh.md`.
+
 ## Common tasks
 
 ### Change theme
@@ -131,6 +147,7 @@ Full pattern, examples, and limits: `references/agent-driving.md`.
 - `references/config-options.md` — config option catalog by category
 - `references/color-schemes.md` — popular built-in themes with exact names
 - `references/agent-driving.md` — driving a WezTerm pane from an AI agent (send-text / get-text loop)
+- `references/ssh.md` — `wezterm ssh` vs persistent `ssh_domains`, OpenSSH config interop, troubleshooting
 
 ## Anti-patterns
 
