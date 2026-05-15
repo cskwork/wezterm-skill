@@ -111,6 +111,23 @@ config.keys = {
 }
 ```
 
+### Split a pane
+
+With the default skill config (`LEADER = Ctrl+a`):
+
+- `Ctrl+a \` — split right (side-by-side)
+- `Ctrl+a -` — split below (stacked)
+- `Ctrl+a h/j/k/l` — move focus, `z` zoom, `x` close, `r` resize mode
+
+From a script (preserves PATH):
+
+```bash
+PANE=$(wezterm cli split-pane --right --percent 40)
+printf 'tail -f app.log\n' | wezterm cli send-text --pane-id "$PANE"
+```
+
+Never `wezterm cli split-pane -- <cmd>` — that bypasses the shell. Full guide and layout recipes: `references/pane-splitting.md`.
+
 ### Hide tab bar when only one tab
 ```lua
 config.hide_tab_bar_if_only_one_tab = true
@@ -144,6 +161,7 @@ Full pattern, examples, and limits: `references/agent-driving.md`.
 
 - `references/cli.md` — full `wezterm cli` subcommand reference
 - `references/keybindings.md` — default keybindings + custom binding patterns
+- `references/pane-splitting.md` — keyboard, defaults, CLI, and layout recipes for splitting panes
 - `references/config-options.md` — config option catalog by category
 - `references/color-schemes.md` — popular built-in themes with exact names
 - `references/agent-driving.md` — driving a WezTerm pane from an AI agent (send-text / get-text loop)

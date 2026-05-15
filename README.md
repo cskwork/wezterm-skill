@@ -23,6 +23,7 @@ wezterm-skill/
   references/
     cli.md                       — wezterm CLI subcommand reference
     keybindings.md               — default + custom binding patterns
+    pane-splitting.md            — split panes by keyboard, defaults, CLI, layout recipes
     config-options.md            — config option catalog
     color-schemes.md             — popular themes with exact names
     agent-driving.md             — drive a pane from an AI agent (send-text / get-text)
