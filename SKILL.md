@@ -43,6 +43,20 @@ For a tiny minimal config, use `assets/wezterm-minimal.lua`.
 
 For a Claude-Code-multi-pane workflow, use `assets/wezterm-claude.lua` and the helper at `scripts/bsp-split.sh`.
 
+## Popular community templates (`examples/`)
+
+If the user wants to start from a battle-tested community config instead of the skill's defaults, point them at `examples/`. Each subfolder ships a README, `install.ps1`, and `install.sh` that back up the user's existing config before pulling from upstream. All five were validated against WezTerm `20240203-110809-5046fc22`.
+
+| # | Preset | ⭐ | License | Best for |
+|---|--------|------|---------|----------|
+| [01](examples/01-kevinsilvester/) | KevinSilvester/wezterm-config | 1072 | MIT | full-featured modular (backdrops, GPU selector) |
+| [02](examples/02-qiansong1/) | QianSong1/wezterm-config | 258 | MIT | lighter modular fork of #1 |
+| [03](examples/03-catppuccin/) | catppuccin/wezterm | 358 | MIT | theme-first single-file with OS dark/light sync |
+| [04](examples/04-sravioli/) | sravioli/wezterm | 155 | GPL-2.0 | OOP-style modular with responsive status bar |
+| [05](examples/05-dragonlobster/) | dragonlobster/wezterm-config | 68 | unspecified | single-file tmux-style starter |
+
+See `examples/README.md` for the comparison table, validation recipe (wrapper trick to test multi-file configs without installing them), and license notes (#04 GPL-2.0 viral, #05 no license — install only, no redistribution).
+
 ## CLI patterns (most useful)
 
 ```bash
