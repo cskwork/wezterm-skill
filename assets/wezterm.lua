@@ -160,7 +160,7 @@ config.font = wezterm.font_with_fallback {
   'Noto Color Emoji',
   'Symbols Nerd Font Mono',
 }
-config.font_size = 12.0
+config.font_size = 14.0
 config.line_height = 1.05
 
 config.window_background_opacity = 0.96
@@ -290,5 +290,57 @@ config.mouse_bindings = {
     action = act.OpenLinkAtMouseCursor,
   },
 }
+
+----------------------------------------------------------------------
+-- Title bar: pwd + git branch in the OS title bar (the row ABOVE tabs).
+-- Avoids competing with the tab row for space. Requires window_decorations
+-- to include 'TITLE' (default on macOS). Updates ~1Hz; git is cached per
+-- pwd with a 5s TTL so the GUI thread never spawns it on every tick.
+-- Standalone module: assets/git-pwd-status.lua (same content, factored out).
+----------------------------------------------------------------------
+do
+  local cache, CACHE_TTL = {}, 5
+
+  local function get_branch(cwd)
+    local now = os.time()
+    local entry = cache[cwd]
+    if entry and (now - entry.checked_at) < CACHE_TTL then return entry.branch end
+    local ok, stdout = wezterm.run_child_process({
+      'git', '-C', cwd, 'branch', '--show-current',
+    })
+    local branch = false
+    if ok then
+      local trimmed = (stdout or ''):gsub('%s+$', '')
+      if trimmed ~= '' then branch = trimmed end
+    end
+    cache[cwd] = { branch = branch, checked_at = now }
+    return branch
+  end
+
+  local function pane_cwd(pane)
+    local uri = pane:get_current_working_dir()
+    if uri == nil then return nil end
+    if type(uri) == 'string' then return uri:match('^file://[^/]*(/.+)$') end
+    return uri.file_path
+  end
+
+  local function home_shorten(p)
+    local h = wezterm.home_dir
+    if p:sub(1, #h) == h then return '~' .. p:sub(#h + 1) end
+    return p
+  end
+
+  wezterm.on('update-status', function(window, pane)
+    local cwd = pane_cwd(pane)
+    if not cwd then window:set_title(''); return end
+    local display = home_shorten(cwd)
+    local branch = get_branch(cwd)
+    if branch then
+      window:set_title(display .. '   ⎇  ' .. branch)
+    else
+      window:set_title(display)
+    end
+  end)
+end
 
 return config

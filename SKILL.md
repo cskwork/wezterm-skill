@@ -258,6 +258,7 @@ Full pattern, examples, and limits: `references/agent-driving.md`.
 - `references/types.md` — `lua-language-server` + community type stubs for IDE autocomplete and inline docs
 - `references/plugins.md` — `wezterm.plugin.require` mechanism + curated plugin list (resurrect, smart-splits, bar.wezterm, ...)
 - `references/workspaces.md` — named workspaces, switching, persistence via unix mux + resurrect, status bar display
+- `references/status-bar.md` — left/right status, OS title bar, and tab title — when to use which surface, with pwd+git recipe
 
 ## Anti-patterns
 

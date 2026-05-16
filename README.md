@@ -89,12 +89,26 @@ WezTerm watches the file and reloads automatically. If something breaks, open th
 
 The default config sets:
 
-- Catppuccin Mocha theme, JetBrains Mono 12pt, slight transparency
+- Catppuccin Mocha theme, JetBrains Mono 14pt, slight transparency
 - `Ctrl+a` as leader (tmux-style)
 - Vim-style pane navigation (`LEADER h/j/k/l`), splits (`LEADER \` / `LEADER -`), zoom (`LEADER z`)
 - Explicit copy/paste (`Ctrl+Shift+C` / `Ctrl+Shift+V`) plus `Ctrl+Insert` / `Shift+Insert`
 - Tab bar hidden when there is only one tab
 - Sensible defaults for scrollback, cursor, and window padding
+- **pwd + git branch in the OS title bar** (the row above the tabs) — updates ~1Hz, git is cached per pwd with a 5s TTL. See `references/status-bar.md` for the full pattern. Standalone module: `assets/git-pwd-status.lua`.
+
+### macOS: putting `wezterm` on PATH
+
+The Homebrew cask installs WezTerm to `/Applications/WezTerm.app` but does NOT symlink the CLI into PATH. Without the symlinks, `wezterm cli send-text`, `wezterm cli list`, etc. fail to launch. WezTerm is a multi-call binary — `wezterm` shells out to sibling binaries `wezterm-gui` and `wezterm-mux-server`, so all three need to be on PATH together:
+
+```bash
+ln -sf /Applications/WezTerm.app/Contents/MacOS/wezterm            ~/.local/bin/wezterm
+ln -sf /Applications/WezTerm.app/Contents/MacOS/wezterm-gui        ~/.local/bin/wezterm-gui
+ln -sf /Applications/WezTerm.app/Contents/MacOS/wezterm-mux-server ~/.local/bin/wezterm-mux-server
+hash -r   # reset zsh's command-location cache in this session
+```
+
+Substitute `~/.local/bin` with whichever directory in your PATH is user-writable (`/opt/homebrew/bin` works too if you want it next to other Homebrew tools).
 
 ## Multi-pane Claude Code workflow
 
