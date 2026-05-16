@@ -94,9 +94,42 @@ KevinSilvester는 `use_fancy_tab_bar = false`로 retro 탭 바를 씁니다. 이
 - **그대로 사용**: `Cmd+W` (탭) / leader+`x` (패인) 키보드 단축키
 - **fancy 전환**: `config/appearance.lua`에서 `use_fancy_tab_bar = true` — hover 시 우상단 ✕ 버튼 자동 표시. catppuccin 색은 `colors/custom.lua`의 `tab_bar` 섹션에 이미 매핑되어 있어 색 손실 없음. 단, 양 끝 반원 글리프(`scircle_left/right`)가 fancy 탭의 둥근 모양 안에 겹쳐 보일 수 있어요.
 
-### 3. 배경 이미지 폴더 미존재
+### 3. 배경 이미지가 매 reload마다 바뀜 (또는 폴더 미존재)
 
-`utils/backdrops.lua`가 `~/Pictures/Wallpapers/`를 스캔합니다. 없으면 조용히 빈 배경 — leader+`b`/`Shift+B`/`/` 키도 무해하게 무시됩니다.
+`utils/backdrops.lua`가 시작 시 `~/Pictures/Wallpapers/`를 스캔하고 random 이미지를 background로 적용합니다. config 저장(auto-reload)이나 `Cmd+R`마다 이미지가 바뀌어 산만하게 느껴질 수 있어요.
+
+**정적 배경(canonical Catppuccin Mocha)으로 고정하기** — `config/appearance.lua`에서:
+
+```lua
+-- 1. colors import 제거 (또는 그대로 두고 colors = colors 라인만 제거)
+local colors = require('colors.custom')   -- ← 삭제 가능
+
+-- 2. return 테이블 안:
+return {
+   ...
+   color_scheme = 'Catppuccin Mocha',     -- ← 추가 (canonical built-in 스킴)
+
+   -- tab_bar는 named 스킴에 정의되지 않으므로 inline overlay로 보존
+   colors = {
+      tab_bar = {
+         background = 'rgba(0, 0, 0, 0.4)',
+         active_tab = { bg_color = '#585b70', fg_color = '#cdd6f4' },
+         inactive_tab = { bg_color = '#313244', fg_color = '#bac2de' },
+         inactive_tab_hover = { bg_color = '#313244', fg_color = '#cdd6f4' },
+         new_tab = { bg_color = '#1e1e2e', fg_color = '#cdd6f4' },
+         new_tab_hover = { bg_color = '#181825', fg_color = '#cdd6f4', italic = true },
+      },
+   },
+
+   -- ← `background = backdrops:initial_options(...)` 라인을 통째로 삭제
+   --   (catppuccin의 base #1e1e2e가 자연스럽게 적용됨)
+   ...
+}
+```
+
+`backdrops` 모듈 자체는 유지하세요 — `bindings.lua`가 leader+`b`/`Shift+B`/`/` 키 5개에서 사용 중입니다. 위 수정만 하면 startup은 정적, 사용자가 leader+`b`를 누르면 그때 image 모드로 전환되는 "기본은 정적, 원할 때만 cycle" 패턴이 됩니다.
+
+폴더(`~/Pictures/Wallpapers/`)가 아예 없으면 조용히 빈 배경으로 fallback — leader+`b` 등 키도 무해하게 무시됩니다.
 
 ## 되돌리기
 
