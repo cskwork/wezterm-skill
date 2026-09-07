@@ -70,7 +70,7 @@ PANE_ID=$(wezterm cli split-pane --right --percent 40)
 printf 'claude\n' | wezterm cli send-text --pane-id "$PANE_ID"
 ```
 
-Do not use `wezterm cli split-pane -- claude`. That form runs `claude` directly without going through your shell, so PATH, aliases, and shell init are skipped.
+`wezterm cli split-pane -- claude` runs the executable directly without interactive shell setup. If it depends on shell-added PATH or aliases, use the intended shell/environment or the split-then-send pattern.
 
 ### Spawn into a named workspace
 
