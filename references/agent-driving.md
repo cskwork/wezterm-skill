@@ -2,23 +2,9 @@
 
 Use this pattern when an AI coding agent (Claude Code, etc.) needs to *operate* a terminal session — type commands, watch output, react. WezTerm's CLI exposes exactly the two primitives this needs: write input into a pane, and read text back out.
 
-## The three-step loop
+## The execution loop
 
-1. **Send** input with `wezterm cli send-text` (no trailing newline by default)
-2. **Wait** for the human to review and press Enter (safety boundary)
-3. **Read** the output with `wezterm cli get-text`
-
-```bash
-wezterm cli send-text 'ls -la'
-# user inspects the typed command, presses Enter
-wezterm cli get-text --start-line -30
-```
-
-Why no automatic newline? `send-text` *types* the text into the pane the same way the keyboard would, so the user gets to review before execution. If you genuinely want fire-and-forget, append `\n`:
-
-```bash
-printf 'ls -la\n' | wezterm cli send-text
-```
+Inspect the pane list and foreground application, select the intended pane, send the requested input, then read its result. If the request is to type or stage a command, omit Enter. If the user requested execution, submit it within the authorized scope; do not require the exact phrase "just run it" or a second routine confirmation. Verify completion rather than treating echoed input as command output.
 
 ## Read commands
 
@@ -54,25 +40,11 @@ The current pane's id is always in `$WEZTERM_PANE`.
 
 ## Default behavior an agent should follow
 
-- **Default: operate the current pane** (omit `--pane-id`). Users expect commands to land where they look.
-- **Use `--pane-id` only when asked** ("send this to pane 3", "use the build terminal", etc.).
-- **Type, do not execute**, unless the user explicitly asks ("just run it", "no prompt", `\n` appended).
-- **Read scrollback after every interactive command** — agents can lose track of state because they only see what they read. After a `cd`, run `wezterm cli get-text --start-line -5` to confirm the new CWD.
-- **Never use `wezterm cli split-pane -- <cmd>`** — bypasses the shell, loses PATH. Split first, then send-text.
-
-## Suggested SKILL.md addendum
-
-If you build a skill that drives the terminal, include something like:
-
-```
-## When driving a WezTerm pane
-
-DEFAULT: omit --pane-id (use focused pane)
-TARGET PANE: use --pane-id N when user says "use terminal X" or "send to pane Y"
-SUBMIT: omit \n so user reviews; append \n only when user says "just run it"
-READ AFTER WRITE: always follow send-text with get-text --start-line -N to confirm outcome
-LIST: `wezterm cli list --format json | jq ...` to discover panes
-```
+- Select the intended pane from current state; use `--pane-id` to avoid focus races.
+- Do not type into an unrelated running program or overwrite pending user input.
+- Distinguish typing from execution based on the actual request, not a magic phrase.
+- Read relevant output after execution and verify completion; shell prompt/exit evidence is stronger than echoed text.
+- For commands requiring interactive shell setup, invoke the intended shell/environment explicitly rather than assuming direct process launch inherits aliases.
 
 ## End-to-end example
 

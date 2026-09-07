@@ -67,14 +67,14 @@ LOGS=$(wezterm cli split-pane --right --percent 35)
 printf 'tail -f /var/log/app.log\n' | wezterm cli send-text --pane-id "$LOGS"
 ```
 
-### Anti-pattern (do not use)
+### Direct execution and shell setup
 
 ```bash
-# WRONG — bypasses your shell, loses PATH, aliases, and shell init
+# Direct launch; verify executable resolution and environment
 wezterm cli split-pane --right -- claude
 ```
 
-The `--` form runs the program directly via the wezterm mux rather than your shell. PATH additions in `~/.bashrc` / `~/.zshrc` / PowerShell profile are skipped, so commands like `claude`, `pnpm`, `nvm`-installed Node, etc. mysteriously become "command not found". Always:
+The `--` form runs the program directly via the wezterm mux rather than your shell. PATH additions in `~/.bashrc` / `~/.zshrc` / PowerShell profile are skipped, so commands like `claude`, `pnpm`, `nvm`-installed Node, etc. mysteriously become "command not found". When the command needs your shell setup:
 
 1. `split-pane` to create the empty pane (your default shell runs there).
 2. `send-text` to type the command into that shell.

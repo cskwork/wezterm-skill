@@ -1,6 +1,6 @@
 ---
 name: wezterm
-description: Configure, customize, and operate the WezTerm terminal emulator. Use when the user wants to set up a WezTerm config (fonts, themes, keybindings, copy-paste, panes, tabs), troubleshoot config errors, drive WezTerm via its CLI (split-pane, send-text, spawn, list), or wire up multi-pane workflows (Claude Code, tmux-style sessions, SSH/multiplexing domains). Also triggers on "WezTerm 설정", "터미널 색상", "wezterm.lua".
+description: Configure, customize, and operate the WezTerm terminal emulator. Use when the user wants to set up a WezTerm config (fonts, themes, keybindings, copy-paste, panes, tabs), troubleshoot config errors, drive WezTerm via its CLI (split-pane, send-text, spawn, list), or wire up multi-pane workflows (Claude Code, tmux-style sessions, SSH/multiplexing domains). Use for WezTerm-specific requests; a generic terminal color or shell question need not activate it.
 ---
 
 # WezTerm Skill
@@ -68,8 +68,8 @@ wezterm cli list-clients
 PANE_ID=$(wezterm cli split-pane --right)
 printf 'claude\n' | wezterm cli send-text --pane-id "$PANE_ID"
 
-# Do NOT do this — bypasses shell, loses PATH:
-# wezterm cli split-pane -- claude    (DON'T)
+# Direct process launch is also available; supply the executable/environment explicitly
+# when it depends on interactive shell setup.
 
 # Activate, kill, zoom
 wezterm cli activate-pane --pane-id "$PANE_ID"
@@ -103,144 +103,13 @@ Full SSH guide (key fields, `wezterm ssh` vs `ssh_domains`, troubleshooting): `r
 
 ## Common tasks
 
-### Change theme
-Edit `config.color_scheme = 'Catppuccin Mocha'`. See `references/color-schemes.md` for the curated list of popular names.
-
-### Set up copy-paste explicitly
-WezTerm already has sane defaults (`Ctrl+Shift+C` / `Ctrl+Shift+V` on Linux/Windows, `Cmd+C` / `Cmd+V` on macOS). To customize:
-
-```lua
-config.keys = {
-  { key = 'C', mods = 'CTRL|SHIFT', action = wezterm.action.CopyTo 'ClipboardAndPrimarySelection' },
-  { key = 'V', mods = 'CTRL|SHIFT', action = wezterm.action.PasteFrom 'Clipboard' },
-}
-```
-
-### Add a leader key (tmux-style)
-```lua
-config.leader = { key = 'a', mods = 'CTRL', timeout_milliseconds = 1000 }
-config.keys = {
-  { key = '|', mods = 'LEADER|SHIFT', action = wezterm.action.SplitHorizontal { domain = 'CurrentPaneDomain' } },
-  { key = '-', mods = 'LEADER',       action = wezterm.action.SplitVertical   { domain = 'CurrentPaneDomain' } },
-}
-```
-
-### Split a pane
-
-With the default skill config (`LEADER = Ctrl+a`):
-
-- `Ctrl+a \` — split right (side-by-side)
-- `Ctrl+a -` — split below (stacked)
-- `Ctrl+a h/j/k/l` — move focus, `z` zoom, `x` close, `r` resize mode
-
-From a script (preserves PATH):
-
-```bash
-PANE=$(wezterm cli split-pane --right --percent 40)
-printf 'tail -f app.log\n' | wezterm cli send-text --pane-id "$PANE"
-```
-
-Never `wezterm cli split-pane -- <cmd>` — that bypasses the shell. Full guide and layout recipes: `references/pane-splitting.md`.
-
-### Switch to a modular config
-
-Once `wezterm.lua` passes ~150 lines, split it. Each module exports `M.apply(config)` and the entry file is a manifest:
-
-```lua
--- ~/.config/wezterm/wezterm.lua
-local wezterm = require 'wezterm'
-local config  = wezterm.config_builder()
-package.path = package.path .. ';' .. wezterm.config_dir .. '/lua/?.lua'
-
-require('appearance').apply(config)
-require('keys'      ).apply(config)
-require('events'    ).apply(config)
-
-return config
-```
-
-Full pattern (helpers/theme/keys/workspaces/events/plugins) and migration steps: `references/modular-config.md`.
-
-### Add a plugin
-
-```lua
-local resurrect = wezterm.plugin.require 'https://github.com/MLFlexer/resurrect.wezterm'
-resurrect.apply_to_config(config)
-```
-
-Pin with `/tree/v1.0.0` suffix. Update via `wezterm.plugin.update_all()` or `wezterm cli plugin update`. Curated list and security notes: `references/plugins.md`.
-
-### Enable IDE autocomplete
-
-Install `lua-language-server`, clone `DrKJeff16/wezterm-types`, drop a `.luarc.json` next to your config:
-
-```json
-{
-  "workspace": { "library": ["~/wezterm-types"] },
-  "diagnostics": { "globals": ["wezterm"] }
-}
-```
-
-Now `config.colo<Tab>` autocompletes, hover shows docs, action payloads are type-checked. Full setup: `references/types.md`.
-
-### Workspaces
-
-Named tab/pane collections per project. Switch via launcher, persist via unix multiplexer:
-
-```lua
--- LEADER w opens fuzzy workspace launcher; existing names complete, new names create
-{ key = 'w', mods = 'LEADER',
-  action = wezterm.action.ShowLauncherArgs { flags = 'FUZZY|WORKSPACES' } }
-
--- Persist sessions across GUI restarts
-config.unix_domains = { { name = 'main' } }
-config.default_gui_startup_args = { 'connect', 'main' }
-```
-
-Full workspace API, auto-bootstrap on launch, status bar display: `references/workspaces.md`.
-
-### Shell integration (CWD inheritance on split)
-
-By default a new pane starts in `default_cwd`, not the parent pane's directory. To make splits inherit CWD, the shell must emit OSC 7. Sourcing WezTerm's bundled scripts is the fast path:
-
-```bash
-# bash / zsh — Linux
-[[ -n "$WEZTERM_PANE" ]] && source /usr/share/wezterm/wezterm.sh
-
-# bash — Windows (Git Bash)
-[[ -n "$WEZTERM_PANE" ]] && source "/c/Program Files/WezTerm/wezterm.sh"
-```
-
-PowerShell has no bundled script; use the manual emitter in `references/shell-integration.md` (works with Starship etc.).
-
-Verify with `wezterm cli list --format json | jq '.[].cwd'` — should show real paths, not just `file:///home/<user>`.
-
-### Hide tab bar when only one tab
-```lua
-config.hide_tab_bar_if_only_one_tab = true
-```
-
-### Transparent window
-```lua
-config.window_background_opacity = 0.92
-config.macos_window_background_blur = 20  -- macOS only
-```
+Use the matching reference below for themes, keybindings, pane layouts, modular configs, plugins, workspaces, shell integration, or IDE types. Read only the relevant guide; examples are starting points and must match the installed WezTerm API and existing configuration.
 
 ## Driving a pane from an AI agent
 
 WezTerm exposes `send-text` (type input into a pane) and `get-text` (read pane output) over its CLI. This makes it possible for an AI coding agent to operate the terminal itself.
 
-The canonical loop:
-
-1. **Send** with `wezterm cli send-text 'cmd'` (no trailing newline — user reviews before pressing Enter)
-2. **Wait** for the user to press Enter
-3. **Read** with `wezterm cli get-text --start-line -30`
-
-Defaults an agent should follow:
-- Operate the **focused pane** by default (omit `--pane-id`); use `--pane-id N` only when the user says "send to pane N" or "use the build terminal"
-- **Type, do not execute** — append `\n` only when the user explicitly says "just run it"
-- Always follow `send-text` with `get-text --start-line -N` to confirm the result
-- Discover layout with `wezterm cli list --format json | jq '.[] | {pane_id, title, cwd}'`
+Inspect the pane list and current foreground state first, then target the intended pane explicitly. A request to type a command should leave it unsubmitted; a request to run a command authorizes execution within its scope without another routine Enter gate. Do not inject text into an unrelated interactive program or infer success from text merely appearing in scrollback. Verify the command's observed completion/output.
 
 Full pattern, examples, and limits: `references/agent-driving.md`.
 
@@ -262,7 +131,7 @@ Full pattern, examples, and limits: `references/agent-driving.md`.
 
 ## Anti-patterns
 
-- Never use `wezterm cli split-pane -- <command>` — it bypasses the shell and loses PATH/aliases. Use `split-pane` to create the pane, then pipe with `send-text`.
+- Direct `split-pane -- <command>` execution does not apply interactive shell setup. Use an explicit executable/environment, or a shell when the command depends on shell PATH/aliases.
 - Do not put `wezterm.config_builder()` and a bare config table in the same file — pick one (the builder is preferred).
 - Avoid `wezterm.on('format-tab-title', ...)` overrides until the basic config works; tab-title formatters silently fail and are hard to debug.
 - Do not run `wezterm cli` from a shell that is not a WezTerm pane — set `WEZTERM_UNIX_SOCKET` or use `--mux-server-unix-domain-socket-path` if you must.
